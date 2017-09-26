@@ -419,8 +419,8 @@ class Mint(requests.Session):
         # Specifying accountId=0 causes Mint to return investment
         # transactions as well.  Otherwise they are skipped by
         # default.
-        
-        
+        assert_pd()
+                
         result = self.request_and_check(
             '{}/transactionDownload.event?exclHidden=T'.format(MINT_ROOT_URL) +
             ('&startDate={0}'.format(start_date) if start_date else '')+
@@ -428,8 +428,14 @@ class Mint(requests.Session):
             ('&accountId=0&' if include_investment else ''),
             headers=self.headers,
             expected_content_type='text/csv')
-        return result.content
-    
+        s = StringIO(result.content)
+        s.seek(0)
+        df = pd.read_csv(s, parse_dates=['Date'])
+        df.columns = [c.lower().replace(' ', '_') for c in df.columns]
+        df.category = (df.category.str.lower()
+                       .replace('uncategorized', pd.np.nan))
+        return df
+
     def get_net_worth(self, account_data=None):
         if account_data is None:
             account_data = self.get_accounts()
