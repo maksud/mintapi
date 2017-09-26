@@ -407,6 +407,29 @@ class Mint(requests.Session):
             expected_content_type='text/csv')
         return result.content
 
+    def get_transactions_advanced(self, include_investment=False, start_date=None, end_date=None):
+        """Returns the raw CSV transaction data as downloaded from Mint.
+
+        If include_investment == True, also includes transactions that Mint
+        classifies as investment-related.  You may find that the investment
+        transaction data is not sufficiently detailed to actually be useful,
+        however.
+        """
+
+        # Specifying accountId=0 causes Mint to return investment
+        # transactions as well.  Otherwise they are skipped by
+        # default.
+        
+        
+        result = self.request_and_check(
+            '{}/transactionDownload.event?exclHidden=T'.format(MINT_ROOT_URL) +
+            ('&startDate={0}'.format(start_date) if start_date else '')+
+            ('&endDate={0}'.format(end_date) if end_date else '')+
+            ('&accountId=0&' if include_investment else ''),
+            headers=self.headers,
+            expected_content_type='text/csv')
+        return result.content
+    
     def get_net_worth(self, account_data=None):
         if account_data is None:
             account_data = self.get_accounts()
